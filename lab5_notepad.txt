@@ -1,0 +1,224 @@
+DROP TABLE ENROLL;
+
+DROP TABLE BOOK_ADOPTION;
+
+DROP TABLE TEXT;
+
+DROP TABLE COURSE;
+
+DROP TABLE STUDENT;
+
+-- Create STUDENT table
+CREATE TABLE STUDENT (
+    regno VARCHAR(15),
+    name VARCHAR(15),
+    major VARCHAR(15),
+    bdate DATE,
+    PRIMARY KEY (regno)
+);
+
+-- Create COURSE table
+CREATE TABLE COURSE (
+    course# INT,
+    cname VARCHAR(15),
+    dept VARCHAR(15),
+    PRIMARY KEY (course#)
+);
+
+-- Create TEXT table
+CREATE TABLE TEXT (
+    book_isbn INT,
+    booktitle VARCHAR(15),
+    publisher VARCHAR(15),
+    author VARCHAR(15),
+    PRIMARY KEY (book_isbn)
+);
+
+-- Create ENROLL table
+CREATE TABLE ENROLL (
+    regno VARCHAR(15),
+    course# INT,
+    sem INT,
+    book_isbn INT,
+    PRIMARY KEY (regno, course#, book_isbn),
+    FOREIGN KEY (regno) REFERENCES STUDENT (regno) ON DELETE CASCADE,
+    FOREIGN KEY (course#) REFERENCES COURSE (course#) ON DELETE CASCADE,
+    FOREIGN KEY (book_isbn) REFERENCES TEXT (book_isbn) ON DELETE CASCADE
+);
+
+-- Create BOOK_ADOPTION table
+CREATE TABLE BOOK_ADOPTION (
+    course# INT,
+    book_isbn INT,
+    sem INT,
+    PRIMARY KEY (course#, book_isbn),
+    FOREIGN KEY (course#) REFERENCES COURSE (course#) ON DELETE CASCADE,
+    FOREIGN KEY (book_isbn) REFERENCES TEXT (book_isbn) ON DELETE CASCADE
+);
+
+-- Insert data into STUDENT
+INSERT INTO STUDENT (regno, name, major, bdate) VALUES ('S001', 'Alice Johnson', 'CS', TO_DATE('10-May-2002', 'DD-Mon-YYYY'));
+INSERT INTO STUDENT (regno, name, major, bdate) VALUES ('S002', 'Bob Smith', 'EE', TO_DATE('15-Sep-2001', 'DD-Mon-YYYY'));
+INSERT INTO STUDENT (regno, name, major, bdate) VALUES ('S003', 'Charlie Brown', 'ME', TO_DATE('20-Mar-2003', 'DD-Mon-YYYY'));
+INSERT INTO STUDENT (regno, name, major, bdate) VALUES ('S004', 'David White', 'CS', TO_DATE('5-Dec-2002', 'DD-Mon-YYYY'));
+INSERT INTO STUDENT (regno, name, major, bdate) VALUES ('S005', 'Emma Wilson', 'EE', TO_DATE('25-Jul-2001', 'DD-Mon-YYYY'));
+
+-- Insert data into COURSE
+INSERT INTO COURSE (course#, cname, dept) VALUES (101, 'DB Systems', 'CS');
+INSERT INTO COURSE (course#, cname, dept) VALUES (102, 'ML Learning', 'CS');
+INSERT INTO COURSE (course#, cname, dept) VALUES (201, 'Circ. Analysis', 'EE');
+INSERT INTO COURSE (course#, cname, dept) VALUES (202, 'Power Systems', 'EE');
+INSERT INTO COURSE (course#, cname, dept) VALUES (301, 'Thermodynamics', 'ME');
+
+
+-- Insert data into TEXT
+
+INSERT INTO TEXT (book_isbn, booktitle, publisher, author) VALUES (1111, 'DB Concepts', 'Pearson', 'Silberschatz');
+INSERT INTO TEXT (book_isbn, booktitle, publisher, author) VALUES (2222, 'ML Found.', 'McGraw-Hill', 'Mitchell');
+INSERT INTO TEXT (book_isbn, booktitle, publisher, author) VALUES (3333, 'Elect. Circuits', 'Pearson', 'Nilsson');
+INSERT INTO TEXT (book_isbn, booktitle, publisher, author) VALUES (4444, 'Power Sys.', 'McGraw-Hill', 'Grainger');
+INSERT INTO TEXT (book_isbn, booktitle, publisher, author) VALUES (5555, 'Thermo Basics', 'Wiley', 'Moran');
+
+-- Insert data into BOOK_ADOPTION
+INSERT INTO BOOK_ADOPTION (course#, sem, book_isbn) VALUES (101, 1, 1111);
+INSERT INTO BOOK_ADOPTION (course#, sem, book_isbn) VALUES (102, 1, 2222);
+INSERT INTO BOOK_ADOPTION (course#, sem, book_isbn) VALUES (201, 2, 3333);
+INSERT INTO BOOK_ADOPTION (course#, sem, book_isbn) VALUES (202, 2, 4444);
+INSERT INTO BOOK_ADOPTION (course#, sem, book_isbn) VALUES (301, 3, 5555);
+
+-- Insert data into ENROLL
+INSERT INTO ENROLL (regno, course#, sem, book_isbn) VALUES ('S001', 101, 1, 1111);
+INSERT INTO ENROLL (regno, course#, sem, book_isbn) VALUES ('S002', 102, 1, 2222);
+INSERT INTO ENROLL (regno, course#, sem, book_isbn) VALUES ('S003', 201, 2, 3333);
+INSERT INTO ENROLL (regno, course#, sem, book_isbn) VALUES ('S004', 202, 2, 4444);
+INSERT INTO ENROLL (regno, course#, sem, book_isbn) VALUES ('S005', 301, 3, 5555);
+
+SELECT course#
+FROM book_adoption
+GROUP BY course#
+HAVING COUNT(book_isbn) > 1;
+
+INSERT INTO BOOK_ADOPTION (course#, sem, book_isbn) VALUES (101, 1, 2222); 
+INSERT INTO BOOK_ADOPTION (course#, sem, book_isbn) VALUES (102, 1, 3333);
+INSERT INTO BOOK_ADOPTION (course#, sem, book_isbn) VALUES (201, 2, 4444); 
+INSERT INTO BOOK_ADOPTION (course#, sem, book_isbn) VALUES (202, 2, 5555);
+
+SELECT dept  
+FROM COURSE  
+WHERE course# IN (  
+    SELECT course#  
+    FROM BOOK_ADOPTION  
+    WHERE book_isbn IN (  
+        SELECT book_isbn  
+        FROM TEXT  
+        WHERE publisher = 'Pearson'  
+    )  
+)  
+GROUP BY dept  
+HAVING COUNT(DISTINCT course#) = (  
+    SELECT MAX(course_count)  
+    FROM (  
+        SELECT dept, COUNT(DISTINCT course#) AS course_count  
+        FROM COURSE  
+        WHERE course# IN (  
+            SELECT course#  
+            FROM BOOK_ADOPTION  
+            WHERE book_isbn IN (  
+                SELECT book_isbn  
+                FROM TEXT  
+                WHERE publisher = 'Pearson'  
+            )  
+        )  
+        GROUP BY dept  
+    ) dept_counts
+);
+
+
+c) 
+SELECT regno 
+FROM ENROLL 
+WHERE course# IN (SELECT course# FROM COURSE)
+GROUP BY regno 
+HAVING COUNT(DISTINCT (SELECT dept FROM COURSE WHERE COURSE.course# = ENROLL.course#)) > 1;
+
+d)
+SELECT regno, name 
+FROM STUDENT 
+WHERE regno NOT IN (SELECT regno FROM ENROLL);
+
+e)
+SELECT dept 
+FROM COURSE 
+WHERE course# IN (
+    SELECT course# 
+    FROM BOOK_ADOPTION 
+    WHERE book_isbn IN (
+        SELECT book_isbn 
+        FROM TEXT 
+        WHERE publisher = 'Specific Publisher'
+    )
+)
+GROUP BY dept 
+HAVING COUNT(DISTINCT book_isbn) = (
+    SELECT COUNT(DISTINCT book_isbn) 
+    FROM TEXT 
+    WHERE publisher = 'Specific Publisher'
+);
+
+
+f)
+SELECT book_isbn, booktitle 
+FROM TEXT 
+WHERE book_isbn IN (
+    SELECT book_isbn 
+    FROM BOOK_ADOPTION 
+    INTERSECT 
+    SELECT book_isbn 
+    FROM ENROLL
+);
+
+g)
+SELECT course# 
+FROM BOOK_ADOPTION 
+WHERE book_isbn IN (
+    SELECT book_isbn 
+    FROM TEXT 
+    WHERE publisher = 'Specific Publisher'
+)
+GROUP BY course# 
+HAVING COUNT(DISTINCT book_isbn) >= 2;
+
+h)
+SELECT regno 
+FROM ENROLL 
+GROUP BY regno 
+HAVING COUNT(book_isbn) = (
+    SELECT MAX(book_count) 
+    FROM (
+        SELECT COUNT(book_isbn) AS book_count 
+        FROM ENROLL 
+        GROUP BY regno
+    ) AS subquery
+);
+
+i)
+SELECT publisher, COUNT(book_isbn) AS num_books 
+FROM TEXT 
+GROUP BY publisher;
+
+j)
+SELECT regno 
+FROM ENROLL e1 
+WHERE NOT EXISTS (
+    SELECT book_isbn 
+    FROM BOOK_ADOPTION ba 
+    WHERE ba.course# = e1.course# 
+    AND NOT EXISTS (
+        SELECT * FROM ENROLL e2 
+        WHERE e2.regno = e1.regno 
+        AND e2.book_isbn = ba.book_isbn
+    )
+);
+
+
+

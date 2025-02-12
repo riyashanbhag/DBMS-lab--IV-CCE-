@@ -1,0 +1,132 @@
+create table person(
+driver_id varchar(30),
+name varchar(50),
+address varchar(100),
+primary key(driver_id));
+
+create table car(
+regno varchar(20),
+model varchar(30),
+year int,
+primary key(regno));
+
+create table accident(
+report_number int,
+accd_date date,
+location varchar(30),
+primary key (report_number));
+
+create table owns(
+driver_id varchar(30),
+regno varchar(20),
+primary key (driver_id,regno),
+foreign key (driver_id) references person(driver_id),
+foreign key(regno) references car(regno));
+
+create table participated(
+driver_id varchar(30),
+regno varchar(20),
+report_number int,
+damage_amount int,
+primary key (driver_id,regno,report_number),
+foreign key (driver_id) references person(driver_id),
+foreign key(regno) references car(regno),
+ foreign key(report_number) references accident(report_number)
+);
+
+INSERT INTO PERSON (driver_id, name, address) VALUES ('D001', 'John Doe', '123 Elm St, Springfield');
+INSERT INTO PERSON (driver_id, name, address) VALUES ('D002', 'Jane Smith', '456 Oak St, Springfield');
+INSERT INTO PERSON (driver_id, name, address) VALUES ('D003', 'Alice Johnson', '789 Pine St, Springfield');
+INSERT INTO PERSON (driver_id, name, address) VALUES ('D004', 'Bob Brown', '321 Maple St, Springfield');
+INSERT INTO PERSON (driver_id, name, address) VALUES ('D005', 'Charlie Davis', '654 Cedar St, Springfield');
+
+INSERT INTO CAR (regno, model, year) VALUES ('REG001', 'Toyota Camry', 2020);
+INSERT INTO CAR (regno, model, year) VALUES ('REG002', 'Honda Accord', 2019);
+INSERT INTO CAR (regno, model, year) VALUES ('REG003', 'Ford Focus', 2018);
+INSERT INTO CAR (regno, model, year) VALUES ('REG004', 'Chevrolet Malibu', 2021);
+INSERT INTO CAR (regno, model, year) VALUES ('REG005', 'Nissan Altima', 2022);
+
+INSERT INTO ACCIDENT (report_number, accd_date, location) VALUES (1, TO_DATE('2023-01-15', 'YYYY-MM-DD'), 'Main St  1st Ave');
+INSERT INTO ACCIDENT (report_number, accd_date, location) VALUES (2, TO_DATE('2023-02-20', 'YYYY-MM-DD'), '2nd Ave  Elm St');
+INSERT INTO ACCIDENT (report_number, accd_date, location) VALUES (3, TO_DATE('2023-03-10', 'YYYY-MM-DD'), '3rd Ave  Oak St');
+INSERT INTO ACCIDENT (report_number, accd_date, location) VALUES (4, TO_DATE('2023-04-05', 'YYYY-MM-DD'), '4th Ave  Pine St');
+INSERT INTO ACCIDENT (report_number, accd_date, location) VALUES (5, TO_DATE('2023-05-25', 'YYYY-MM-DD'), '5th Ave  Maple St');
+
+INSERT INTO OWNS (driver_id, regno) VALUES ('D001', 'REG001');
+INSERT INTO OWNS (driver_id, regno) VALUES ('D002', 'REG002');
+INSERT INTO OWNS (driver_id, regno) VALUES ('D003', 'REG003');
+INSERT INTO OWNS (driver_id, regno) VALUES ('D004', 'REG004');
+INSERT INTO OWNS (driver_id, regno) VALUES ('D005', 'REG005');
+
+
+INSERT INTO PARTICIPATED (driver_id, regno, report_number, damage_amount) VALUES ('D001', 'REG001', 1, 15000);
+INSERT INTO PARTICIPATED (driver_id, regno, report_number, damage_amount) VALUES ('D002', 'REG002', 2, 20000);
+INSERT INTO PARTICIPATED (driver_id, regno, report_number, damage_amount) VALUES ('D003', 'REG003', 3, 10000);
+INSERT INTO PARTICIPATED (driver_id, regno, report_number, damage_amount) VALUES ('D004', 'REG004', 4, 5000);
+INSERT INTO PARTICIPATED (driver_id, regno, report_number, damage_amount) VALUES ('D005', 'REG005', 5, 3000);
+
+
+update participated
+set damage_amount=25000
+where regno='REG003' and report_number=3;
+
+INSERT INTO PERSON (driver_id, name, address) 
+VALUES ('D006', 'Fiona Carter', '606 Cedar St');
+
+INSERT INTO PERSON (driver_id, name, address) 
+VALUES ('D007', 'George Miller', '707 Birch St');
+
+INSERT INTO PERSON (driver_id, name, address) 
+VALUES ('D008', 'Hannah Davis', '808 Willow St');
+
+
+INSERT INTO CAR (regno, model, year) VALUES ('REG006', 'Hyundai Sonata', 2020);
+INSERT INTO CAR (regno, model, year) VALUES ('REG007', 'Kia Optima', 2019);
+INSERT INTO CAR (regno, model, year) VALUES ('REG008', 'Subaru Legacy', 2021);
+
+INSERT INTO ACCIDENT (report_number, accd_date, location) 
+VALUES (6, TO_DATE('2022-06-15', 'YYYY-MM-DD'), '6th Ave Cedar St');
+
+INSERT INTO ACCIDENT (report_number, accd_date, location) 
+VALUES (7, TO_DATE('2021-07-20', 'YYYY-MM-DD'), '7th Ave Birch St');
+
+INSERT INTO ACCIDENT (report_number, accd_date, location) 
+VALUES (8, TO_DATE('2020-08-10', 'YYYY-MM-DD'), '8th Ave Willow St');
+
+
+INSERT INTO OWNS (driver_id, regno) VALUES ('D006', 'REG006');
+INSERT INTO OWNS (driver_id, regno) VALUES ('D007', 'REG007');
+INSERT INTO OWNS (driver_id, regno) VALUES ('D008', 'REG008');
+
+INSERT INTO PARTICIPATED (driver_id, regno, report_number, damage_amount) 
+VALUES ('D006', 'REG006', 6, 12000);
+
+INSERT INTO PARTICIPATED (driver_id, regno, report_number, damage_amount) 
+VALUES ('D007', 'REG007', 7, 25000);
+
+INSERT INTO PARTICIPATED (driver_id, regno, report_number, damage_amount) 
+VALUES ('D008', 'REG008', 8, 18000);
+
+
+delete from participated 
+where report_number in (select report_number
+from accident 
+where extract(year from accd_date)=2021);
+
+delete from accident 
+where extract(year from accd_date)=2021;
+
+
+-- Add a new column
+ALTER TABLE PERSON
+ADD phone_number VARCHAR(15);
+
+-- Drop the address column
+ALTER TABLE PERSON
+DROP COLUMN phone_number;
+
+alter table car
+add constraint chk_year check(year>=1886);
+
+
+

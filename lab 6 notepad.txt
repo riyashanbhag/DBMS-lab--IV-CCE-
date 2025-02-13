@@ -1,0 +1,191 @@
+//lab 6
+
+1) CREATE OR REPLACE FUNCTION get_total_accidents_in_year (year IN INT) 
+RETURN INT 
+IS
+    total_accidents INT;
+BEGIN
+    -- Count accidents for the given year
+    SELECT COUNT(*) 
+    INTO total_accidents
+    FROM ACCIDENT
+    WHERE EXTRACT(YEAR FROM  accd_date) = year;
+    
+    -- Return the total number of accidents
+    RETURN total_accidents;
+END;
+/
+SET SERVEROUTPUT ON;
+
+SELECT get_total_accidents_in_year(2024) AS total_accidents
+FROM dual;
+
+TOTAL_ACCIDENTS
+---------------
+              5
+
+
+2) CREATE OR REPLACE PROCEDURE get_total_damage_for_driver_in_year (
+    p_driver_id IN VARCHAR2,   -- The driver ID as input (using VARCHAR2 for driver_id)
+    p_year IN INT              -- The year for which damage needs to be calculated
+)
+IS
+    total_damage INT;          -- Variable to store the total damage
+BEGIN
+    -- Calculate the total damage caused by the driver in the given year
+    SELECT SUM(d.damage_amount)
+    INTO total_damage
+    FROM PARTICIPATED d
+    JOIN ACCIDENT a ON d.report_number = a.report_number
+    WHERE d.driver_id# = p_driver_id
+    AND EXTRACT(YEAR FROM a.accd_date) = p_year;
+    
+    -- Display the result
+    DBMS_OUTPUT.PUT_LINE('Total damage caused by driver ' || p_driver_id || ' in ' || p_year || ' is: ' || total_damage);
+    
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        -- Handle the case where no accidents are found for the given driver and year
+        DBMS_OUTPUT.PUT_LINE('No accidents found for driver ' || p_driver_id || ' in ' || p_year);
+    WHEN OTHERS THEN
+        -- Handle other exceptions
+        DBMS_OUTPUT.PUT_LINE('An error occurred: ' || SQLERRM);
+END;
+/
+
+SET SERVEROUTPUT ON;
+
+BEGIN
+    -- Call the procedure with a specific driver ID and year
+    get_total_damage_for_driver_in_year('4', 2024);  -- Example: driver 'D12345' in the year 2023
+END;
+/
+
+  5  /
+Total damage caused by driver 4 in 2024 is: 9000
+
+PL/SQL procedure successfully completed.
+
+
+3)
+CREATE OR REPLACE PROCEDURE get_accident_info_by_location (
+    p_location IN VARCHAR2  -- The location for which accident info needs to be displayed
+)
+IS
+BEGIN
+    -- Retrieve accident information for the specified location
+    FOR acc IN (
+        SELECT report_number, accd_date, location
+        FROM ACCIDENT
+        WHERE location = p_location
+    ) LOOP
+        -- Display the accident details
+        DBMS_OUTPUT.PUT_LINE('Accident Report Number: ' || acc.report_number ||
+                             ', Date: ' || acc.accd_date ||
+                             ', Location: ' || acc.location);
+    END LOOP;
+    
+    -- Handle the case where no accidents are found for the given location
+    IF SQL%ROWCOUNT = 0 THEN
+        DBMS_OUTPUT.PUT_LINE('No accidents found in location: ' || p_location);
+    END IF;
+    
+EXCEPTION
+    WHEN OTHERS THEN
+        -- Handle other exceptions
+        DBMS_OUTPUT.PUT_LINE('An error occurred: ' || SQLERRM);
+END;
+/
+
+SET SERVEROUTPUT ON;
+
+BEGIN
+    -- Call the procedure with a specific location
+    get_accident_info_by_location('uptown');  -- Example: Location 'New York'
+END;
+/
+
+Accident Report Number: 102, Date: 15-JUN-24, Location: uptown
+
+PL/SQL procedure successfully completed.
+
+
+4)
+CREATE OR REPLACE PROCEDURE get_drivers_with_no_accidents
+IS
+BEGIN
+    -- Retrieve all drivers who are not involved in any accidents
+    FOR driver IN (
+        SELECT p.driver_id#, p.name, p.address
+        FROM PERSON p
+        LEFT JOIN PARTICIPATED part ON p.driver_id# = part.driver_id#
+        WHERE part.report_number IS NULL  -- This ensures that the driver has not participated in any accident
+    ) LOOP
+        -- Display the driver details
+        DBMS_OUTPUT.PUT_LINE('Driver ID: ' || driver.driver_id# ||
+                             ', Name: ' || driver.name ||
+                             ', Address: ' || driver.address);
+    END LOOP;
+    
+    -- Handle the case where no drivers are found who haven't participated in any accidents
+    IF SQL%ROWCOUNT = 0 THEN
+        DBMS_OUTPUT.PUT_LINE('No drivers found who have never been involved in an accident.');
+    END IF;
+    
+EXCEPTION
+    WHEN OTHERS THEN
+        -- Handle any unexpected errors
+        DBMS_OUTPUT.PUT_LINE('An error occurred: ' || SQLERRM);
+END;
+/
+
+SET SERVEROUTPUT ON;
+
+BEGIN
+    -- Call the procedure to get drivers who have never been in an accident
+    get_drivers_with_no_accidents;
+END;
+/
+
+Driver ID: 8, Name: Rahul, Address: Pune
+
+PL/SQL procedure successfully completed.
+
+5) 
+CREATE OR REPLACE FUNCTION get_total_accidents_for_car (
+    p_license IN VARCHAR2   -- Car's license number as input
+) 
+RETURN INT 
+IS
+    total_accidents INT;    -- Variable to store the total number of accidents
+BEGIN
+    -- Query to count the number of accidents involving the car (by its license)
+    SELECT COUNT(*)
+    INTO total_accidents
+    FROM PARTICIPATED
+    WHERE regno = p_license;  -- Match the license number with regno in PARTICIPATED table
+    
+    -- Return the total number of accidents
+    RETURN total_accidents;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        -- If no accidents are found for the given car, return 0
+        RETURN 0;
+    WHEN OTHERS THEN
+        -- Handle any unexpected errors
+        RETURN -1;  -- Return -1 for any errors
+END;
+/
+SET SERVEROUTPUT ON;
+
+SELECT get_total_accidents_for_car('R003') AS total_accidents
+FROM dual;
+
+
+TOTAL_ACCIDENTS
+---------------
+              1
+
+
+
+

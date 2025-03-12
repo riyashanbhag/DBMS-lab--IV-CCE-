@@ -1,0 +1,173 @@
+//code for lab 8 
+
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using Oracle.DataAccess.Client;
+using Oracle.DataAccess.Types;
+namespace lab_8_vs
+{
+    public partial class Form1 : Form
+    {
+        OracleConnection conn;
+        OracleCommand comm;
+        OracleDataAdapter da;
+        DataSet ds;
+        DataTable dt;
+        DataRow dr;
+        int i = 0; 
+        public Form1()
+        {
+            InitializeComponent();
+        }
+
+        private void button1_Click(object sender, EventArgs e)//start btn
+        {
+            string constring = "DATA SOURCE=172.16.54.24:1521/ictorcl;USER ID=CCE230953058;password=student";
+            conn = new OracleConnection(constring);
+            conn.Open();
+            comm = new OracleCommand();
+            comm.CommandText = "select * from student";
+            comm.CommandType = CommandType.Text;
+            ds = new DataSet();
+            da = new OracleDataAdapter(comm.CommandText, conn);
+            da.Fill(ds, "STUDENT");
+            dt = ds.Tables["STUDENT"];
+            int t = dt.Rows.Count;
+            MessageBox.Show(t.ToString() +" rows are present");
+            dr = dt.Rows[i];
+            textBox1.Text = dr["REGNO"].ToString();
+            textBox2.Text = dr["NAME"].ToString();
+            textBox3.Text = dr["MAJOR"].ToString();
+            textBox4.Text = dr["BDATE"].ToString();
+            conn.Close(); 
+        }
+
+        private void button2_Click(object sender, EventArgs e)//next btn
+        {
+            i++;
+            if (i >= dt.Rows.Count)
+                i = 0;
+            dr = dt.Rows[i];
+            textBox1.Text = dr["REGNO"].ToString();
+            textBox2.Text = dr["NAME"].ToString();
+            textBox3.Text = dr["MAJOR"].ToString();
+            textBox4.Text = dr["BDATE"].ToString(); 
+        }
+
+        private void button3_Click(object sender, EventArgs e)//prev btn
+        {
+            i--;
+            if (i < 0)
+                i = dt.Rows.Count - 1;
+            dr = dt.Rows[i];
+            textBox1.Text = dr["REGNO"].ToString();
+            textBox2.Text = dr["NAME"].ToString();
+            textBox3.Text = dr["MAJOR"].ToString();
+            textBox4.Text = dr["BDATE"].ToString(); 
+        }
+
+  private void button4_Click(object sender, EventArgs e)//insert btn
+        {
+            try
+            {
+                conn.Open(); // Open the database connection
+
+                // Check if REGNO already exists
+                OracleCommand checkCmd = new OracleCommand("SELECT COUNT(*) FROM STUDENT WHERE REGNO = :REGNO", conn);
+                checkCmd.Parameters.Add(new OracleParameter("REGNO", textBox1.Text));
+
+                int count = Convert.ToInt32(checkCmd.ExecuteScalar());
+
+                if (count > 0)
+                {
+                    MessageBox.Show("Error: REGNO already exists. Please enter a unique REGNO.");
+                    return;
+                }
+
+                // Get date from DateTimePicker
+                string formattedDate = dateTimePicker1.Value.ToString("MM/dd/yyyy");
+
+                OracleCommand cm = new OracleCommand("INSERT INTO STUDENT (REGNO, NAME, MAJOR, BDATE) VALUES (:REGNO, :NAME, :MAJOR, TO_DATE(:BDATE, 'MM/DD/YYYY'))", conn);
+                cm.CommandType = CommandType.Text;
+
+                // Using parameters to prevent SQL Injection
+                cm.Parameters.Add(new OracleParameter("REGNO", textBox1.Text));
+                cm.Parameters.Add(new OracleParameter("NAME", textBox2.Text));
+                cm.Parameters.Add(new OracleParameter("MAJOR", textBox3.Text));
+                cm.Parameters.Add(new OracleParameter("BDATE", formattedDate));
+
+                cm.ExecuteNonQuery(); // Execute the query
+
+                // Commit the transaction explicitly
+                OracleCommand commitCmd = new OracleCommand("COMMIT", conn);
+                commitCmd.ExecuteNonQuery();
+
+                MessageBox.Show("Record Inserted Successfully!");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error: " + ex.Message);
+            }
+            finally
+            {
+                conn.Close(); // Close the connection
+            }
+        }
+
+ private void button5_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                conn.Open(); // Open the database connection
+
+                // Validate REGNO (assuming it's a required field)
+                if (string.IsNullOrWhiteSpace(textBox1.Text))
+                {
+                    MessageBox.Show("Please enter a valid Registration Number (REGNO).");
+                    return;
+                }
+
+                // Get the date from DateTimePicker
+                DateTime bdate = dateTimePicker1.Value;
+
+                // Create the update command
+                OracleCommand cm = new OracleCommand("UPDATE STUDENT SET NAME = :NAME, MAJOR = :MAJOR, BDATE = TO_DATE(:BDATE, 'MM/DD/YYYY') WHERE REGNO = :REGNO", conn);
+                cm.CommandType = CommandType.Text;
+
+                // Use parameters to prevent SQL Injection
+                cm.Parameters.Add(new OracleParameter("NAME", textBox2.Text));
+                cm.Parameters.Add(new OracleParameter("MAJOR", textBox3.Text));
+                cm.Parameters.Add(new OracleParameter("BDATE", bdate.ToString("MM/dd/yyyy")));
+                cm.Parameters.Add(new OracleParameter("REGNO", textBox1.Text)); // REGNO is alphanumeric
+
+                int rowsAffected = cm.ExecuteNonQuery(); // Execute the update
+
+                if (rowsAffected > 0)
+                {
+                    OracleCommand commitCmd = new OracleCommand("COMMIT", conn);
+                    commitCmd.ExecuteNonQuery();
+                    MessageBox.Show("Student record updated successfully!");
+                }
+                else
+                {
+                    MessageBox.Show("No matching student found for the given REGNO.");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error: " + ex.Message);
+            }
+            finally
+            {
+                conn.Close(); // Ensure connection is closed
+            }
+        }
+    }
+}
